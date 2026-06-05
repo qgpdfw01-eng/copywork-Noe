@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق المحاكاة | Typing Simulator</title>
+    <title>تطبيق المحاكاة</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +13,7 @@
         * { box-sizing: border-box; }
 
         body {
-            font-family: 'Amiri Quran', Georgia, serif; /* استخدام خطوط كلاسيكية متناسقة للغتين */
+            font-family: 'Amiri Quran', serif;
             background-color: #f4f6f9;
             display: flex;
             flex-direction: column;
@@ -58,15 +58,14 @@
             width: 100%;
             height: 100%;
             padding: 20px; 
-            font-family: 'Amiri Quran', Georgia, serif;
-            font-size: 32px; /* نفس الحجم الكبير للغتين */
-            line-height: 2.5; /* نفس التباعد المريح للأسطر */
+            font-family: 'Amiri Quran', serif;
+            font-size: 32px;
+            line-height: 2.5;
             white-space: pre-wrap;
             margin: 0;
             border: none;
         }
 
-        /* تغيير اتجاه المحاذاة فقط حسب اللغة مع الحفاظ على الشكل */
         html[dir="rtl"] .layer { text-align: right; }
         html[dir="ltr"] .layer { text-align: left; }
 
@@ -86,21 +85,77 @@
         .correct-char { color: #000000 !important; }
         .wrong-char { color: #94a3b8 !important; }
 
-        .bottom-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
+        /* شريط الحالة الافتراضي */
+        .bottom-bar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-top: 15px; 
+            height: 45px;
+        }
         .stats { font-size: 16px; color: #94a3b8; font-weight: 600; }
         
         .btn { 
-            font-family: 'Amiri Quran', Georgia, serif; 
+            font-family: 'Amiri Quran', serif; 
             font-size: 16px; 
             font-weight: 600; 
-            background: #f8fafc; 
-            border: 1px solid #e2e8f0; 
+            background: none; 
+            border: none; 
             color: #64748b; 
             cursor: pointer; 
-            padding: 6px 16px;
-            border-radius: 8px;
+            padding: 5px 10px;
         }
-        .btn:hover { background: #e2e8f0; }
+        .btn:hover { color: #3b82f6; }
+
+        /* شريط الإدخال المدمج الجديد المصمم بناءً على طلبك */
+        .edit-bar {
+            display: none; /* مخفي افتراضياً */
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+            width: 100%;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 30px; /* تصميم دائري شبيه بالصورة */
+            padding: 4px 6px 4px 16px;
+            height: 48px;
+        }
+        html[dir="rtl"] .edit-bar { padding: 4px 16px 4px 6px; }
+
+        .inline-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            outline: none;
+            color: #1e293b;
+            padding: 8px 0;
+            font-family: 'Amiri Quran', serif;
+        }
+        
+        .action-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* أزرار الحفظ والإلغاء الدائرية الفخمة */
+        .circle-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: 0.2s ease;
+        }
+        .btn-save { background: #3b82f6; color: white; }
+        .btn-save:hover { background: #2563eb; }
+        .btn-cancel { background: #e2e8f0; color: #64748b; }
+        .btn-cancel:hover { background: #cbd5e1; }
     </style>
 </head>
 <body>
@@ -116,9 +171,19 @@
         <textarea class="layer input-textarea" id="userInput" spellcheck="false" autocomplete="off"></textarea>
     </div>
 
-    <div class="bottom-bar">
+    <!-- 1. شريط العرض الافتراضي -->
+    <div class="bottom-bar" id="bottomBar">
         <div class="stats" id="wordCount">عدد الكلمات: 0</div>
         <button id="changeTextBtn" class="btn">تغيير النص ⚙️</button>
+    </div>
+
+    <!-- 2. شريط الإدخال المدمج (يظهر بدلاً من السفلي عند التعديل) -->
+    <div class="edit-bar" id="editBar">
+        <input type="text" class="inline-input" id="inlineInput" autocomplete="off" spellcheck="false">
+        <div class="action-btns">
+            <button class="circle-btn btn-save" id="btnInlineSave" title="حفظ">✓</button>
+            <button class="circle-btn btn-cancel" id="btnInlineCancel" title="إلغاء">✕</button>
+        </div>
     </div>
 </div>
 
@@ -130,6 +195,13 @@
     const wordCount = document.getElementById('wordCount');
     const langToggle = document.getElementById('langToggle');
     const changeTextBtn = document.getElementById('changeTextBtn');
+    
+    // العناصر الجديدة للشريط المدمج
+    const bottomBar = document.getElementById('bottomBar');
+    const editBar = document.getElementById('editBar');
+    const inlineInput = document.getElementById('inlineInput');
+    const btnInlineSave = document.getElementById('btnInlineSave');
+    const btnInlineCancel = document.getElementById('btnInlineCancel');
 
     const diacritics = ['\u064B', '\u064C', '\u064D', '\u064E', '\u064F', '\u0650', '\u0651', '\u0652', '\u0670'];
 
@@ -138,19 +210,21 @@
             text: "بَراءَةٌ مِنَ اللَّهِ وَرَسولِهِ إِلَى الَّذينَ عاهَدتُم مِنَ المُشرِكينَ",
             toggleBtnText: "English 🌐",
             changeBtnText: "تغيير النص ⚙️",
-            wordCountLabel: "عدد الكلمات:"
+            wordCountLabel: "عدد الكلمات:",
+            placeholder: "أكتب النص العربي الجديد هنا واضغط صَح..."
         },
         en: {
             text: "Success is not final, failure is not fatal: it is the courage to continue that counts.",
             toggleBtnText: "عربي 🌐",
             changeBtnText: "Change Text ⚙️",
-            wordCountLabel: "Words:"
+            wordCountLabel: "Words:",
+            placeholder: "Type the new English text here and press check..."
         }
     };
 
     let currentLang = 'ar';
 
-    // تبديل اللغات مع الحفاظ الثابت على التصميم
+    // تبديل اللغات
     langToggle.addEventListener('click', () => {
         currentLang = currentLang === 'ar' ? 'en' : 'ar';
         
@@ -161,30 +235,73 @@
         changeTextBtn.innerText = langData[currentLang].changeBtnText;
         bgText.innerText = langData[currentLang].text;
         
+        closeEditBar();
+        resetInputs();
+    });
+
+    // تفعيل شريط الإدخال المدمج الفوري
+    changeTextBtn.addEventListener('click', () => {
+        bottomBar.style.display = 'none';
+        editBar.style.display = 'flex';
+        
+        inlineInput.value = bgText.innerText; // جلب النص الحالي تلقائياً للتعديل
+        inlineInput.placeholder = langData[currentLang].placeholder;
+        inlineInput.style.direction = currentLang === 'ar' ? 'rtl' : 'ltr';
+        inlineInput.focus();
+    });
+
+    // حفظ النص الجديد من شريط الإدخال
+    btnInlineSave.addEventListener('click', saveInlineText);
+    
+    // دعم حفظ النص مباشرة عند الضغط على Enter داخل الشريط
+    inlineInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            saveInlineText();
+        }
+    });
+
+    function saveInlineText() {
+        if (inlineInput.value.trim() !== '') {
+            bgText.innerText = inlineInput.value;
+            resetInputs();
+        }
+        closeEditBar();
+    }
+
+    // إلغاء التعديل والعودة للشريط الافتراضي
+    btnInlineCancel.addEventListener('click', closeEditBar);
+
+    function closeEditBar() {
+        editBar.style.display = 'none';
+        bottomBar.style.display = 'flex';
+    }
+
+    function resetInputs() {
         userInput.value = '';
         overlayText.innerHTML = '';
         wordCount.innerText = `${langData[currentLang].wordCountLabel} 0`;
-    });
+        userInput.focus();
+    }
 
-    // طريقة التلوين والمحاكاة الموحدة
+    // منطق المحاكاة والتلوين الموحد
     userInput.addEventListener('input', () => {
         const inputText = userInput.value;
         const originalText = bgText.innerText;
+        const originalWords = originalText.split(" ");
+        const inputWords = inputText.split(" ");
         let htmlContent = "";
 
-        if (currentLang === 'ar') {
-            const originalWords = originalText.split(" ");
-            const inputWords = inputText.split(" ");
+        for (let w = 0; w < inputWords.length; w++) {
+            const currentInWord = inputWords[w];
+            const currentOrigWord = originalWords[w] || "";
+            let inIdx = 0;
+            let origIdx = 0;
 
-            for (let w = 0; w < inputWords.length; w++) {
-                const currentInWord = inputWords[w];
-                const currentOrigWord = originalWords[w] || "";
-                let inIdx = 0;
-                let origIdx = 0;
+            while (inIdx < currentInWord.length) {
+                const inChar = currentInWord[inIdx];
+                const origChar = currentOrigWord[origIdx] || "";
 
-                while (inIdx < currentInWord.length) {
-                    const inChar = currentInWord[inIdx];
-                    const origChar = currentOrigWord[origIdx] || "";
+                if (currentLang === 'ar') {
                     if (inChar === origChar || (origChar === "" && inChar !== "")) {
                         htmlContent += `<span class="correct-char">${inChar}</span>`;
                         inIdx++; origIdx++;
@@ -197,20 +314,17 @@
                         htmlContent += `<span class="wrong-char">${inChar}</span>`;
                         inIdx++; origIdx++;
                     }
-                }
-                if (w < inputWords.length - 1) htmlContent += " ";
-            }
-        } else {
-            // التلوين المتطابق للحروف الإنجليزية فوق النص الأصلي تماماً
-            for (let i = 0; i < inputText.length; i++) {
-                if (i < originalText.length) {
-                    if (inputText[i] === originalText[i]) {
-                        htmlContent += `<span class="correct-char">${inputText[i]}</span>`;
+                } else {
+                    if (inChar === origChar || (origChar === "" && inChar !== "")) {
+                        htmlContent += `<span class="correct-char">${inChar}</span>`;
+                        inIdx++; origIdx++;
                     } else {
-                        htmlContent += `<span class="wrong-char">${inputText[i]}</span>`;
+                        htmlContent += `<span class="wrong-char">${inChar}</span>`;
+                        inIdx++; origIdx++;
                     }
                 }
             }
+            if (w < inputWords.length - 1) htmlContent += " ";
         }
         
         overlayText.innerHTML = htmlContent;
